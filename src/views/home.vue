@@ -10,43 +10,36 @@
     </div>
 
     <div style="color: green">
-      <h1>{{ sharedStore.message }}</h1>
-      <h1>{{ globalStateValue }}</h1>
+      <h1>{{ messageStore.message }}</h1>
+      <button @click="changeMessage">
+        改变主应用消息为：这是改变的子应用实例
+      </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
-import { useSharedStore } from '../store/shared'
-const sharedStore = useSharedStore()
+import { ref, watch, watchEffect, unref, toRefs } from 'vue'
+import { useMessageStore } from '../store/index'
 
-// 使用 defineProps 来接收父应用传递的 props
-const props = defineProps({
-  globalState: {
-    type: Object,
-    required: true,
-  },
-})
+var messageStore = ref({})
 
-const globalStateValue = props.globalState
-debugger
-// 直接从主应用传递的 store 中获取数据
-const message = ref(globalStateValue)
-
-// 如果需要修改主应用的状态
-const updateMessage = () => {
-  globalState.setMessage('Updated from child app')
+import { useGlobalState } from '@/shared/useGlobalState'
+const { globalStore } = useGlobalState()
+import { qiankunWindow } from 'vite-plugin-qiankun/dist/helper.js'
+if (!qiankunWindow.__POWERED_BY_QIANKUN__) {
+  messageStore = useMessageStore()
+} else {
+  watchEffect(() => {
+    if (globalStore.value) {
+      messageStore.value = globalStore.value.messageStore
+    }
+  })
 }
 
-// 监听 globalState 的动态变化
-watch(
-  () => props.globalState,
-  (newGlobalState) => {
-    console.log('Updated globalState:', newGlobalState)
-  },
-  { immediate: true }
-)
+function changeMessage() {
+  messageStore.value.setMessage('这是改变的子应用实例')
+}
 </script>
 
 <style scoped>

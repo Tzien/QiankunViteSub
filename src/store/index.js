@@ -5,4 +5,4 @@ const pinia = createPinia()
 pinia.use(piniaPluginPersistedstate)
 
 export default pinia
-export * from './shared'
+export * from './message'

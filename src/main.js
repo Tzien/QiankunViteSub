@@ -5,19 +5,32 @@ import {
   renderWithQiankun,
   qiankunWindow,
 } from 'vite-plugin-qiankun/dist/helper'
-import { createPinia } from 'pinia'
+import pinia from './store/index'
 
 import actions from './shared/action.js'
-const pinia = createPinia()
+import { useMessageStore } from './store/message.js'
+import {
+  initGlobalStateListener,
+  clearGlobalStateListener,
+  addGlobalStateListener,
+} from './shared/globalStateManager'
+
 let instance = null
-function render(props = {}) {
-  if (props) {
-    // 注入 actions 实例
-    actions.setActions(props)
-  }
+var messageStore = ref({})
+async function render(props = {}) {
   const { container } = props
   instance = createApp(App)
   instance.use(pinia)
+
+  if (qiankunWindow.__POWERED_BY_QIANKUN__) {
+    actions.setActions(props)
+    //获取全局状态
+    await addGlobalStateListener((state, prev) => {
+      messageStore = state.messageStore
+    })
+  } else {
+    messageStore = useMessageStore()
+  }
   instance.use(router)
   instance.mount(container ? container.querySelector('#subapp') : '#subapp')
 }
@@ -31,6 +44,9 @@ if (!qiankunWindow.__POWERED_BY_QIANKUN__) {
 renderWithQiankun({
   mount(props) {
     render(props)
+    if (qiankunWindow.__POWERED_BY_QIANKUN__) {
+      initGlobalStateListener(props)
+    }
   },
   bootstrap() {
     console.log('%c', 'color:green;', ' ChildOne bootstrap')
@@ -41,5 +57,8 @@ renderWithQiankun({
   unmount(props) {
     instance.unmount()
     instance = null
+    if (qiankunWindow.__POWERED_BY_QIANKUN__) {
+      clearGlobalStateListener()
+    }
   },
 })
